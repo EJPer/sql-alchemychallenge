@@ -24,6 +24,9 @@ Base.prepare(autoload_with = engine)
 Measurment = Base.classes.measurement
 Station = Base.classes.station
 
+#input start and end dates
+
+
 
 #Create an app
 app = Flask(__name__)
@@ -32,6 +35,7 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     print("recieved request for 'Home Page...")
+    """List all available routes"""
     return("welcome to home page see possible routes below:<br/>"
     f"Use Path /api/v1.0/precipitation for precipitation analysis<br/>"
     f"Use Path /api/v1.0/stations<br/>"
@@ -48,27 +52,55 @@ def precip():
     finaldate = session.query(Measurment.date).order_by(Measurment.date.desc()).first()
     year_early = datetime.strptime(finaldate[0], '%Y-%m-%d') - dt.timedelta(days = 365)
 
-    last_12_months = session.query(Measurment.date,Measurment.prcp).\
-    filter(Measurment.date > year_early).all()
-    
-    return last_12_months
+    last_12_months = session.query(Measurment.date,Measurment.prcp).filter(Measurment.date >= year_early).all()
 
     session.close()
 
-    # #Create a dict, from the rows of data
-    # percip = []
-    # for date, prcp in last_12_months:
-    #     percip_dict = {}
-    #     percip_dict["date"] = date
-    #     percip_dict["prcp"] = prcp
-    #     percip.append(percip_dict)
+    #Create a dict, from the rows of data
+    precip = dict(last_12_months)
 
 
-
-    # return jsonify(precip)
-
+    return jsonify(precip)
 
 
+#################################
+#next path
+#################################
+@app.route("/api/v1.0/stations")
+def stations():
+    #create session link to db
+    session = Session(engine)
+
+    #query for station list
+    station_list = active_stations = session.query(Station.station).all()
+
+    session.close()
+
+    #create list:
+    final_list = list(np.ravel(station_list))
+
+    return jsonify(final_list)
+
+#################################
+#next path
+#################################
+@app.route("/api/v1.0/tobs")
+def tobs():
+    session = Session(engine)
+
+    #query 
+    finaldate = session.query(Measurment.date).order_by(Measurment.date.desc()).first()
+    year_early = datetime.strptime(finaldate[0], '%Y-%m-%d') - dt.timedelta(days = 365)
+
+
+    high_station_query = session.query(Measurment.date,Measurment.tobs).filter(Measurment.station == 'USC00519281').filter(Measurment.date >= year_early).all()
+
+    session.close()
+    
+    #create a dictionary:
+    active_station = dict(high_station_query)
+
+    return jsonify(active_station)
 
 
 if __name__ == "__main__":
