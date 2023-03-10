@@ -41,9 +41,9 @@ def home():
     """List all available routes"""
     return("welcome to home page see possible routes below:<br/>"
     f"Use Path /api/v1.0/precipitation for precipitation analysis<br/>"
-    f"Use Path /api/v1.0/stations<br/>"
+    f"Use Path /api/v1.0/stations for list of stations<br/> "
     f"Use Path /api/v1.0/tobs for temp analysis<br/>" 
-    f"Use Path /api/v1.0/<start> and /api/v1.0/<start>/<end> to observe min max temps throughout those dates<br/> "
+    f"Use Path /api/v1.0/startdate and /api/v1.0/startdate/enddate to observe min max temps throughout those dates. For beginning date enter in startdate for last date enter in end date (Date Format: yyyy-mm-dd)<br/> "
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -150,7 +150,7 @@ def start_end(start,end):
     end_format = dt.datetime.strptime(end, date_format)
 
     #query
-    results = session.query(Measurment.date,func.avg(Measurment.tobs),func.max(Measurment.tobs), func.min(Measurment.tobs)).filter(Measurment.date >= (start_format)).filter(Measurment.date <= (end_format)).group_by(Measurment.date).all()
+    results = session.query(Measurment.date,func.avg(Measurment.tobs),func.max(Measurment.tobs), func.min(Measurment.tobs)).filter(Measurment.date >= (start_format)).group_by(Measurment.date).filter(Measurment.date <= (end_format)).all()
 
 
     session.close()
@@ -164,11 +164,10 @@ def start_end(start,end):
          start_end_dict['Min Temp'] = output[3]
          start_end_results.append(start_end_dict)
          
-       
-    return jsonify(results)
+     
+    return jsonify(start_end_results)
 
 
 if __name__ == "__main__":
     app.run(debug=True)
 
-    
