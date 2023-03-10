@@ -10,6 +10,7 @@ from datetime import date
 from datetime import datetime
 
 
+
 ##################################################
 # Database Setup
 #################################################
@@ -24,7 +25,9 @@ Base.prepare(autoload_with = engine)
 Measurment = Base.classes.measurement
 Station = Base.classes.station
 
-#input start and end dates
+##input start and end dates
+
+
 
 
 
@@ -93,7 +96,7 @@ def tobs():
     year_early = datetime.strptime(finaldate[0], '%Y-%m-%d') - dt.timedelta(days = 365)
 
 
-    high_station_query = session.query(Measurment.date,Measurment.tobs).filter(Measurment.station == 'USC00519281').filter(Measurment.date >= year_early).all()
+    high_station_query = session.query(Measurment.date, Measurment.tobs).filter(Measurment.station == 'USC00519281').filter(Measurment.date >= year_early).all()
 
     session.close()
     
@@ -103,9 +106,69 @@ def tobs():
     return jsonify(active_station)
 
 
+
+#################################
+#next path-dynamic
+#################################
+@app.route("/api/v1.0/<start>")
+def date_start(start):
+     #create session
+     session = Session(engine)
+     date_format = '%Y-%m-%d'
+     dt.datetime.strptime(start, date_format)
+     results = session.query(Measurment.date,func.avg(Measurment.tobs),func.max(Measurment.tobs), func.min(Measurment.tobs)).filter(Measurment.date >= (start)).group_by(Measurment.date).all()
+     
+
+
+     session.close()
+     
+     start_results = []
+     for output in results:
+         start_dict={}
+         start_dict['date'] = output[0]
+         start_dict['Avg temp'] = output[1]
+         start_dict['Max temp'] = output[2]
+         start_dict['Min Temp'] = output[3]
+         start_results.append(start_dict)
+         
+       
+     return jsonify(start_results)
+
+
+
+
+#################################
+#next path-dynamic
+#################################
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start,end):
+    #create session
+    session = Session(engine)
+    #format starting and end dates
+    date_format = '%Y-%m-%d'
+    start_format = dt.datetime.strptime(start, date_format)
+    end_format = dt.datetime.strptime(end, date_format)
+
+    #query
+    results = session.query(Measurment.date,func.avg(Measurment.tobs),func.max(Measurment.tobs), func.min(Measurment.tobs)).filter(Measurment.date >= (start_format)).filter(Measurment.date <= (end_format)).group_by(Measurment.date).all()
+
+
+    session.close()
+
+    start_end_results = []
+    for output in results:
+         start_end_dict={}
+         start_end_dict['date'] = output[0]
+         start_end_dict['Avg temp'] = output[1]
+         start_end_dict['Max temp'] = output[2]
+         start_end_dict['Min Temp'] = output[3]
+         start_end_results.append(start_end_dict)
+         
+       
+    return jsonify(results)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
 
-
-
-
+    
